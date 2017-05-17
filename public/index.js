@@ -1,7 +1,7 @@
 
 // We actually need 2 canvases, 1 for the view and 1 for the content.
 const imgCanvas = document.createElement('canvas')
-imgCanvas.width = 1000; imgCanvas.height = 1000
+imgCanvas.width = 100; imgCanvas.height = 100
 const imgctx = imgCanvas.getContext('2d')
 
 // Actual canvas drawn to the screen.
@@ -132,19 +132,19 @@ class View {
 
   clampFrame() {
     // Clamp the visible area so the middle of the screen always has content.
-    const imgwidth = 1000 * this.size
+    const imgwidth = 100 * this.size
     const visX = this.width / this.size
     const visY = this.height / this.size
 
     if (imgwidth > this.width)
-      this.scrollX = clamp(this.scrollX, -visX/2, 1000 - visX/2)
+      this.scrollX = clamp(this.scrollX, -visX/2, 100 - visX/2)
     else
-      this.scrollX = clamp(this.scrollX, 500 - visX, 500)
+      this.scrollX = clamp(this.scrollX, 50 - visX, 50)
 
     if (imgwidth > this.height)
-      this.scrollY = clamp(this.scrollY, -visX/2, 1000 - visY/2)
+      this.scrollY = clamp(this.scrollY, -visX/2, 100 - visY/2)
     else
-      this.scrollY = clamp(this.scrollY, 500 - visY, 500)
+      this.scrollY = clamp(this.scrollY, 50 - visY, 50)
   }
 
   resizeTo(width, height) {
@@ -274,7 +274,7 @@ canvas.onmousedown = e => {
 
   if (mode === 'paint') {
     const {tx, ty} = mouse
-    if (tx < 0 || tx >= 1000 || ty < 0 || ty >= 1000) return
+    if (tx < 0 || tx >= 100 || ty < 0 || ty >= 100) return
 
     const oldColor = imgctx.getImageData(tx, ty, 1, 1).data
     const color = palette[brush]
@@ -371,7 +371,7 @@ window.addEventListener('gesturechange', e => {
 }, true)
 
 const isInScreen = (tx, ty) => (
-  tx >= 0 && tx < 1000 && ty >= 0 && ty < 1000
+  tx >= 0 && tx < 100 && ty >= 0 && ty < 100
 )
 
 function draw() {
@@ -402,7 +402,7 @@ function draw() {
     ctx.font = '15px monospace'
     ctx.fillStyle = '#333'
     ;['Rules:', 'No swastikas', "Buy me dinner before you show me your junk"]
-    .forEach((str, i) => { ctx.fillText(str, 0, 1000 + (i+1) * 15) })
+    .forEach((str, i) => { ctx.fillText(str, 0, 100 + (i+1) * 15) })
 
     if (mode === 'paint' && isInScreen(mouse.tx, mouse.ty)) {
       const c = palette[brush]
@@ -416,7 +416,7 @@ function draw() {
 }
 
 imgctx.fillStyle = 'grey'
-imgctx.fillRect(0, 0, 1000, 1000)
+imgctx.fillRect(0, 0, 100, 100)
 draw()
 
 const setConnected = (newStatus) => {

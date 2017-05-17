@@ -5,6 +5,7 @@
 // - Write API - POST JSON edits to /edit or something
 // - Fetch image API - this will only be hit by nginx. It returns the current place image and its version
 // - Event stream API - This is a server-sent event stream which will just forward events from kafka.
+"use strict"
 
 process.title = 'sephplace'
 
@@ -55,7 +56,7 @@ const loadSnapshot = () => {
   } else {
     console.log('snapshot database empty. Replaying entire log')
     // Technically I only need half this much space - its only 4 bit color after all.
-    const data = new Buffer(1000 * 1000)
+    const data = new Buffer(100 * 100)
     data.fill(0)
     return [data, -1]
   }
@@ -97,12 +98,12 @@ const palettePacked = palette.map(arr =>
 // This is an RGB buffer kept up to date with each edit to the indexed buffer.
 // Maintaining this makes encoding the png a bit faster (320ms -> 250ms),
 // although I'm not sure if the complexity is really worth it.
-const imgBuffer = new Buffer(1000 * 1000 * 3)
+const imgBuffer = new Buffer(100 * 100 * 3)
 
 {
-  for (let y = 0; y < 1000; y++) {
-    for (let x = 0; x < 1000; x++) {
-      const px = y * 1000 + x
+  for (let y = 0; y < 100; y++) {
+    for (let x = 0; x < 100; x++) {
+      const px = y * 100 + x
       
       //const color = palette[randInt(16)]//palette[imgData[px]]
       const color = palette[imgData[px]]
@@ -114,7 +115,7 @@ const imgBuffer = new Buffer(1000 * 1000 * 3)
 }
 
 const setRaw = (x, y, index) => {
-  const px = y * 1000 + x
+  const px = y * 100 + x
   imgData[px] = index
 
   const color = palette[index]
@@ -152,7 +153,7 @@ app.get('/sp/current', (req, res) => {
 
   // TODO: Find a PNG encoder which supports indexed pngs. It'll be way faster that way.
   const img = new PNG({
-    width: 1000, height: 1000,
+    width: 100, height: 100,
     colorType: 2, // color but no alpha
     bitDepth: 8,
     inputHasAlpha: false,
@@ -191,7 +192,7 @@ setInterval(() => {
 // Each edit is 3 bytes (10 bits x, 10 bits y, 4 bits for color).
 const encodeEditTo = (buffer, offset, x, y, color) => {
   // Writes in buffer[offset], buffer[offset+1] and buffer[offset+2].
-  assert(x >= 0 && x < 1000 && y >= 0 && y < 1000 & color >= 0 && color < 16)
+  assert(x >= 0 && x < 100 && y >= 0 && y < 100 & color >= 0 && color < 16)
 
   // Encoding:
   // byte 1 is just the lower 8 bits of x
@@ -217,8 +218,8 @@ const decodeEdit = (buffer, offset) => { // returns x, y, color.
 {
   // Lets just check.
   const b = new Buffer(3)
-  encodeEditTo(b, 0, 333, 666, 15)
-  assert.deepEqual(decodeEdit(b, 0), [333, 666, 15])
+  encodeEditTo(b, 0, 33, 66, 15)
+  assert.deepEqual(decodeEdit(b, 0), [33, 66, 15])
 }
 
 //const buffer = new Buffer(1000 * 1000) // 1MB should be plenty.
@@ -313,7 +314,7 @@ function makeAggregator(timeout, aggregate, dispatch) {
 
 // This is a buffer of the incoming writes.
 const processEdit = (() => {
-  const buffer = new Buffer(1000 * 100 * 3) // 100k edits per 200ms. Proooobably fine.
+  const buffer = new Buffer(100 * 100 * 3) // 100k edits per 200ms. Proooobably fine.
   let pos = 0
   let callbacks = []
 
@@ -347,6 +348,7 @@ const processEdit = (() => {
 
 const banlist = new Set
 
+/*
 try {
   const entries = JSON.parse(fs.readFileSync('banlist.json', 'utf-8'))
   entries.forEach(e => banlist.add(e))
@@ -358,7 +360,7 @@ const ban = (address) => {
     banlist.add(address)
     fs.writeFileSync('banlist.json', JSON.stringify(Array.from(banlist)))
   }
-}
+}*/
 
 const byUserAgent = new Map
 const editsByAddress = new Map
@@ -381,7 +383,7 @@ setInterval(() => {
 app.post('/sp/edit', (req, res, next) => {
   if (req.query.x == null || req.query.y == null || req.query.c == null) return next(Error('Invalid query'))
   const x = req.query.x|0, y = req.query.y|0, c = req.query.c|0
-  if (!inRange(x, 0, 1000) || !inRange(y, 0, 1000) || !inRange(c, 0, 16)) return next(Error('Invalid value'))
+  if (!inRange(x, 0, 100) || !inRange(y, 0, 100) || !inRange(c, 0, 16)) return next(Error('Invalid value'))
 
   // Simple rate limiting. Only allow 10 edits per 10 second window.
   const ua = req.headers['user-agent']
@@ -400,7 +402,7 @@ app.post('/sp/edit', (req, res, next) => {
   // 50 points per 10 seconds. Drawing in white space costs 2 point. Everything else costs 5 for now.
   if (edits > 50) return res.sendStatus(403)
 
-  const px = y * 1000 + x
+  const px = y * 100 + x
 
   editsByAddress.set(address, edits + (imgData[px] === 0 ? 2 : 5))
 
@@ -417,7 +419,7 @@ const stats = {sentPackets:0, sentBytes:0, editMessages:0, edits:0}
 
 const broadcastPack = (() => {
   let version = -1
-  const buffer = new Buffer(1000 * 100 * 3) // Way bigger than we need.
+  const buffer = new Buffer(100 * 100 * 3) // Way bigger than we need.
   let pos = 4
 
   return makeAggregator(500, (pack, v) => {

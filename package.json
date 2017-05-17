@@ -13,5 +13,10 @@
     "node-lmdb": "^0.4.4",
     "pngjs": "^3.0.1",
     "ws": "^2.2.3"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1"
   }
 }
